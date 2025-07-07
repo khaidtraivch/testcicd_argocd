@@ -1,10 +1,4 @@
-image: docker:latest
-
-services:
-  - docker:dind
-
 variables:
-  DOCKER_DRIVER: overlay2
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
 
 stages:
@@ -17,6 +11,7 @@ before_script:
 build_image:
   stage: build
   script:
+    - docker version       # kiểm tra Docker đã cài chưa
     - docker build -t $IMAGE_TAG .
     - docker push $IMAGE_TAG
 
@@ -26,7 +21,8 @@ deploy_to_ec2:
     - main
   script:
     - echo "Deploying to EC2..."
-    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
+    - |
+      ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
         docker pull $IMAGE_TAG &&
         docker stop todolist || true &&
         docker rm todolist || true &&
