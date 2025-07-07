@@ -6,12 +6,13 @@ stages:
   - deploy
 
 before_script:
+  # Đăng nhập Docker registry
   - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
 
 build_image:
   stage: build
   script:
-    - docker version       # kiểm tra Docker đã cài chưa
+    - docker version       # Kiểm tra Docker đã cài chưa trên runner
     - docker build -t $IMAGE_TAG .
     - docker push $IMAGE_TAG
 
