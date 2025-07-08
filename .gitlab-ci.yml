@@ -3,29 +3,26 @@ variables:
 
 stages:
   - build
-  - deploy
+  - test
 
 before_script:
-  # Đăng nhập Docker registry
-  - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  # Đăng nhập Docker Registry (nếu cần push image, nếu không thì có thể bỏ)
+  - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY || echo "Skip docker login"
 
 build_image:
   stage: build
   script:
-    - docker version       # Kiểm tra Docker đã cài chưa trên runner
+    - docker version
     - docker build -t $IMAGE_TAG .
+    # Nếu chưa có registry hoặc chưa muốn push, có thể comment dòng sau
     - docker push $IMAGE_TAG
-
-deploy_to_ec2:
-  stage: deploy
   only:
-    - main
+    - branches
+
+test_image:
+  stage: test
   script:
-    - echo "Deploying to EC2..."
-    - |
-      ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
-        docker pull $IMAGE_TAG &&
-        docker stop todolist || true &&
-        docker rm todolist || true &&
-        docker run -d --name todolist -p 80:5000 $IMAGE_TAG
-      "
+    # Ví dụ chạy test trong container
+    - docker run --rm $IMAGE_TAG pytest tests/
+  only:
+    - branches
