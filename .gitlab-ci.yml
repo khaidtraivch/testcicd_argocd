@@ -1,35 +1,22 @@
 stages:
-    - build
-    - test
-    - checklogs
-build:
-    stage: build
-    script: 
-        - whoami
-        - pwd
-        - ls
+  - check
+  - build
 
+check_env:
+  stage: check
+  script:
+    - echo "🔍 Ai đang chạy job này?"
+    - whoami
+    - echo "📂 Thư mục hiện tại là:"
+    - pwd
+    - echo "📄 Liệt kê file/folder:"
+    - ls -al
 
-# cache:
-#   paths:
-#     - .cache/pip
-
-# before_script:
-#   - whoiam
-#   - 
-
-# test:
-#   script:
-#     - pip install ruff tox  # you can also use tox
-#     - pip install --editable ".[test]"
-#     - tox -e py,ruff
-
-# run:
-#   script:
-#     - pip install .
-#     # run the command here
-#   artifacts:
-#     paths:
-#       - build/*
+build_image:
+  stage: build
+  script:
+    - echo "🚧 Bắt đầu build image bằng docker-compose"
+    - docker-compose version
+    - docker-compose build app
 
 
