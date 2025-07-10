@@ -1,22 +1,28 @@
 stages:
   - check
   - build
+  - push 
 
 check_env:
   stage: check
   script:
-    - echo "🔍 Ai đang chạy job này?"
     - whoami
-    - echo "📂 Thư mục hiện tại là:"
     - pwd
-    - echo "📄 Liệt kê file/folder:"
     - ls -al
 
 build_image:
   stage: build
   script:
-    - echo "🚧 Bắt đầu build image bằng docker-compose"
-    - docker-compose version
     - docker-compose build app
 
-
+push_image:
+  stage: push
+  script:
+    - echo "🔐 Login Docker Hub"
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - echo "🏷️ Tag image"
+    - docker tag flaskbase_ci_deploy_app:latest khainxphuthai/flask_image_from_ec2:10_07_2025
+    - echo "📤 Push image lên Docker Hub"
+    - docker push khainxphuthai/flask_image_from_ec2:10_07_2025
+  only:
+    - main
