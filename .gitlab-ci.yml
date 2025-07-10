@@ -1,11 +1,11 @@
 deploy_to_ec2:
   stage: deploy
-  image: alpine:latest
   only:
     - main
   before_script:
-    # Cài đặt ssh & docker client
-    - apk add --no-cache openssh-client docker-cli
+    # Cập nhật hệ thống & cài SSH + Docker client nếu cần
+    - sudo apt-get update -y
+    - sudo apt-get install -y openssh-client docker.io
 
     # Thiết lập SSH key
     - mkdir -p ~/.ssh
