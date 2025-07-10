@@ -4,8 +4,8 @@ deploy_to_ec2:
     - main
   before_script:
     # Cập nhật hệ thống & cài SSH + Docker client nếu cần
-    - sudo apt-get update -y
-    - sudo apt-get install -y openssh-client docker.io
+    # - sudo apt-get update -y
+    # - sudo apt-get install -y openssh-client docker.io
 
     # Thiết lập SSH key
     - mkdir -p ~/.ssh
