@@ -1,26 +1,24 @@
 image: docker:latest
 
 services:
-  - docker:dind  # Dùng Docker-in-Docker để build & push image
+  - docker:dind  # Dùng Docker-in-Docker để build và run container
 
 variables:
   DOCKER_DRIVER: overlay2
-  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  IMAGE_TAG: test-image:$CI_COMMIT_SHORT_SHA
 
 stages:
   - build
   - test
 
 before_script:
-  # Đăng nhập Docker Registry để push image
-  - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY || echo "Skip docker login"
+  - docker info
 
 build_image:
   stage: build
   script:
     - docker version
     - docker build -t $IMAGE_TAG .
-    - docker push $IMAGE_TAG
   only:
     - branches
 
