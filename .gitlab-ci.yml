@@ -1,6 +1,5 @@
 stages:
   - check
-  - build
 
 check_env:
   stage: check
@@ -11,10 +10,3 @@ check_env:
     - pwd
     - echo "📄 Liệt kê file/folder:"
     - ls -al
-
-build_image:
-  stage: build
-  script:
-    - echo "🚧 Bắt đầu build image bằng docker-compose"
-    - docker-compose version
-    - docker-compose build app
