@@ -29,22 +29,15 @@ deploy:
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
   script:
-    # ✅ Deploy app
-    - |
-      echo "🚀 Deploying to EC2..."
-      ssh ubuntu@$EC2_HOST <<EOF
-        cd ~/flaskbase_ci_deploy
-        docker pull $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
-        docker compose down || true
-        docker compose up -d
+    - >
+      ssh ubuntu@$EC2_HOST '
+        cd ~/flaskbase_ci_deploy &&
+        docker pull $IMAGE_NAME:$CI_COMMIT_SHORT_SHA &&
+        docker compose down || true &&
+        docker compose up -d &&
         echo "✅ Deploy complete"
-EOF
-
-    # ✅ Send email after deploy
-    - |
-      echo "📧 Sending deployment success email..."
-      scp send_email.py ubuntu@$EC2_HOST:/home/ubuntu/
-      ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py"
-
+      '
+    - scp send_email.py ubuntu@$EC2_HOST:/home/ubuntu/
+    - ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py"
   only:
     - main
