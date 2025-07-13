@@ -1,4 +1,29 @@
-test-runner:
+image: docker:latest
+
+services:
+  - docker:dind
+
+variables:
+  IMAGE_NAME: khainxphuthai/todolist_ver1.1
+
+stages:
+  - build
+  - push
+
+before_script:
+  - echo "🔧 Starting build"
+
+build:
   stage: build
   script:
-    - echo "✅ GitLab Runner chạy OK"
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
+    - docker tag $IMAGE_NAME:$CI_COMMIT_SHORT_SHA $IMAGE_NAME:latest
+
+push:
+  stage: push
+  script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+    - docker push $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $IMAGE_NAME:latest
+  only:
+    - main
