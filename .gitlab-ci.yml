@@ -1,12 +1,33 @@
-stages:
-  - check
+image: docker:latest
 
-check_env:
-  stage: check
+services:
+  - docker:dind
+
+stages:
+  - build
+  - push
+
+variables:
+  DOCKER_DRIVER: overlay2
+  IMAGE_NAME: khainxphuthai/todolist_ver1.1
+
+before_script:
+  - echo "🛠️ Start CI process..."
+
+build:
+  stage: build
   script:
-    - echo "🔍 Ai đang chạy job này?"
-    - whoami
-    - echo "📂 Thư mục hiện tại là:"
-    - pwd
-    - echo "📄 Liệt kê file/folder:"
-    - ls -al
+    - echo "🔨 Building Docker image..."
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
+    - docker tag $IMAGE_NAME:$CI_COMMIT_SHORT_SHA $IMAGE_NAME:latest
+
+push:
+  stage: push
+  script:
+    - echo "🔐 Logging in to Docker Hub..."
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+    - echo "📦 Pushing image to Docker Hub..."
+    - docker push $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $IMAGE_NAME:latest
+  only:
+    - main
