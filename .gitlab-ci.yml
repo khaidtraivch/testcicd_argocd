@@ -1,26 +1,46 @@
-image: docker:latest
-
-services:
-  - docker:dind
+stages:
+  - build
+  - deploy
 
 variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_DRIVER: overlay2
-  FF_NETWORK_PER_BUILD: "true"
   IMAGE_NAME: khainxphuthai/todolist_ver1.1
 
-stages:
-  - build_and_push
-
-build_and_push:
-  stage: build_and_push
-  script:
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
     - docker info
+  script:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
     - docker build -t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
-    - docker tag $IMAGE_NAME:$CI_COMMIT_SHORT_SHA $IMAGE_NAME:latest
     - docker push $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
-    - docker push $IMAGE_NAME:latest
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh python3 py3-pip
+    - pip install --no-cache-dir smtplib 2>/dev/null || true
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+  script:
+    - |
+      ssh ubuntu@$EC2_HOST "
+        cd ~/flaskbase_ci_deploy &&
+        docker pull $IMAGE_NAME:$CI_COMMIT_SHORT_SHA &&
+        docker compose down || true &&
+        docker compose up -d &&
+        echo '✅ Deploy complete on EC2'
+      "
+    - |
+      scp send_email.py ubuntu@$EC2_HOST:/home/ubuntu/
+      ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py"
   only:
     - main
