@@ -1,24 +1,3 @@
-stages:
-  - build
-  - deploy
-
-variables:
-  IMAGE_NAME: khainxphuthai/todolist_ver1.1
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_DRIVER: overlay2
-
-build:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
-  before_script:
-    - docker info
-  script:
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
-    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
-    - docker push $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
-
 deploy:
   stage: deploy
   image: alpine:latest
@@ -29,8 +8,8 @@ deploy:
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
   script:
-    - echo "🔒 Testing SSH connection..."
-    - ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$EC2_HOST "echo '✅ SSH connection successful'"
+    - echo "🔍 Checking if send_email.py exists in repo..."
+    - ls -lh send_email.py || (echo "❌ send_email.py not found" && exit 1)
 
     - echo "🚀 Deploying Docker container..."
     - |
@@ -40,17 +19,13 @@ deploy:
         docker pull $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
         docker compose down || true
         docker compose up -d
-        echo "✅ Deploy complete"
+        echo "✅ Docker deployment done"
       EOF
 
-    - echo "📁 Checking if send_email.py exists locally..."
-    - |
-      if [ -f "send_email.py" ]; then
-        echo "📤 Copying send_email.py..."
-        scp -v send_email.py ubuntu@$EC2_HOST:/home/ubuntu/ || echo "❌ SCP failed"
-        ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py" || echo "❌ Failed to run send_email.py"
-      else
-        echo "⚠️ send_email.py not found. Skipping email sending."
-      fi
+    - echo "📤 Copying send_email.py to EC2..."
+    - scp -v send_email.py ubuntu@$EC2_HOST:/home/ubuntu/ || (echo "❌ SCP failed" && exit 1)
+
+    - echo "🐍 Running send_email.py on EC2..."
+    - ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py"
   only:
     - main
