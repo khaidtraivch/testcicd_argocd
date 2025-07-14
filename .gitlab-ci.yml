@@ -29,6 +29,10 @@ deploy:
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
   script:
+    - echo "🔒 Testing SSH connection..."
+    - ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$EC2_HOST "echo '✅ SSH connection successful'"
+
+    - echo "🚀 Deploying Docker container..."
     - >
       ssh ubuntu@$EC2_HOST '
         cd ~/flaskbase_ci_deploy &&
@@ -37,7 +41,15 @@ deploy:
         docker compose up -d &&
         echo "✅ Deploy complete"
       '
-    - scp send_email.py ubuntu@$EC2_HOST:/home/ubuntu/
-    - ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py"
+
+    - echo "📁 Checking if send_email.py exists..."
+    - |
+      if [ -f "send_email.py" ]; then
+        echo "📤 Copying send_email.py..."
+        scp -v send_email.py ubuntu@$EC2_HOST:/home/ubuntu/ || echo "❌ SCP failed"
+        ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py" || echo "❌ Failed to run script"
+      else
+        echo "⚠️ send_email.py not found. Skipping email notification."
+      '
   only:
     - main
