@@ -23,7 +23,7 @@ deploy:
       EOF
 
     - echo "📤 Copying send_email.py to EC2..."
-    - scp -v send_email.py ubuntu@$EC2_HOST:/home/ubuntu/ || (echo "❌ SCP failed" && exit 1)
+    # - scp -v send_email.py ubuntu@$EC2_HOST:/home/ubuntu/ || (echo "❌ SCP failed" && exit 1)
 
     - echo "🐍 Running send_email.py on EC2..."
     - ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py"
