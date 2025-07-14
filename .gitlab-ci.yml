@@ -5,10 +5,9 @@ stages:
 build:
   stage: build
   script:
-    - echo "Build step: compiling, linting, testing, etc."
+    - echo "Build step: compiling or packaging application"
 
 deploy:
   stage: deploy
   script:
     - echo "Deploy step: transferring artifacts or restarting service"
-    # Không còn lệnh scp hoặc python liên quan đến send_email.py
