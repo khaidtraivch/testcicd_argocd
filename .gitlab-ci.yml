@@ -33,23 +33,24 @@ deploy:
     - ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$EC2_HOST "echo '✅ SSH connection successful'"
 
     - echo "🚀 Deploying Docker container..."
-    - >
-      ssh ubuntu@$EC2_HOST '
-        cd ~/flaskbase_ci_deploy &&
-        docker pull $IMAGE_NAME:$CI_COMMIT_SHORT_SHA &&
-        docker compose down || true &&
-        docker compose up -d &&
+    - |
+      ssh ubuntu@$EC2_HOST <<EOF
+        set -e
+        cd ~/flaskbase_ci_deploy
+        docker pull $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+        docker compose down || true
+        docker compose up -d
         echo "✅ Deploy complete"
-      '
+      EOF
 
-    - echo "📁 Checking if send_email.py exists..."
+    - echo "📁 Checking if send_email.py exists locally..."
     - |
       if [ -f "send_email.py" ]; then
         echo "📤 Copying send_email.py..."
         scp -v send_email.py ubuntu@$EC2_HOST:/home/ubuntu/ || echo "❌ SCP failed"
-        ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py" || echo "❌ Failed to run script"
+        ssh ubuntu@$EC2_HOST "python3 /home/ubuntu/send_email.py" || echo "❌ Failed to run send_email.py"
       else
-        echo "⚠️ send_email.py not found. Skipping email notification."
-      '
+        echo "⚠️ send_email.py not found. Skipping email sending."
+      fi
   only:
     - main
