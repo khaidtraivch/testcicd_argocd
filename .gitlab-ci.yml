@@ -5,9 +5,10 @@ stages:
 build:
   stage: build
   script:
-    - echo "Build step: compiling or packaging application"
+    - echo "Building..."
 
 deploy:
   stage: deploy
   script:
-    - echo "Deploy step: transferring artifacts or restarting service"
+    - echo "transferring artifacts or restarting service"
+
