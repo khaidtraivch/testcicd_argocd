@@ -1,5 +1,8 @@
-build:
-  stage: sonar_scan
+stages:
+  - build  # hoặc test nếu phù hợp
+
+sonar_scan:
+  stage: build  # đổi từ sonar_scan
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
