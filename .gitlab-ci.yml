@@ -1,47 +1,15 @@
-stages:
-  - sonar_scan
-  - build
-  - push
-
-variables:
-  SONAR_HOST_URL: "http://localhost:9000"
-  DOCKER_REGISTRY: "docker.io"
-  DOCKER_IMAGE: "khainxphuthai/projectci_ubuntu"
-  DOCKER_TAG: "latest"  # Có thể thay bằng $CI_COMMIT_SHORT_SHA nếu muốn
-
-# Quét mã với SonarQube
 sonar_scan:
   stage: sonar_scan
-  image: sonarsource/sonar-scanner-cli:latest
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
   script:
-    - |
-      sonar-scanner \
-        -Dsonar.projectKey=khainx106-group_flaskbase_ci_deploy_5c3db64c-02ca-4df6-8921-db0e69eb5a0 \
+    - sonar-scanner \
+        -Dsonar.projectKey=khainx106_flaskbase_main \
+        -Dsonar.projectName="FlaskBase CI" \
         -Dsonar.host.url=$SONAR_HOST_URL \
         -Dsonar.login=$SONAR_TOKEN
   only:
     - main
     - develop
     - merge_requests
-
-# Build Docker image
-build_image:
-  stage: build
-  image: docker:24.0.5  # Hoặc docker:latest nếu không cần cố định
-  services:
-    - docker:24.0.5-dind
-  script:
-    - docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$DOCKER_TAG .
-  only:
-    - main
-    - develop
-
-# Push image lên Docker Hub
-push_image:
-  stage: push
-  image: docker:24.0.5
-  script:
-    - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-    - docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$DOCKER_TAG
-  only:
-    - main
