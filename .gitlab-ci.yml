@@ -21,9 +21,9 @@ sonar_scan:
         -Dsonar.host.url=$SONAR_HOST_URL \
         -Dsonar.login=$SONAR_TOKEN
   only:
-    - merge_requests
     - main
     - develop
+    - merge_requests
 
 build_image:
   stage: build
