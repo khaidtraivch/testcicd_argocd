@@ -1,8 +1,8 @@
 stages:
   - test
 
-test_job:
+test:
   stage: test
   script:
-    - echo "Hello, GitLab CI!"
-    - echo "This is a simple test job"
+    - whoami
+    - ls
