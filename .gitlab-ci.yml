@@ -7,14 +7,15 @@ variables:
   SONAR_HOST_URL: "http://localhost:9000"
   DOCKER_REGISTRY: "docker.io"
   DOCKER_IMAGE: "khainxphuthai/projectci_ubuntu"
-  DOCKER_TAG: "latest"  # có thể thay bằng $CI_COMMIT_SHORT_SHA nếu muốn
+  DOCKER_TAG: "latest"  # Có thể thay bằng $CI_COMMIT_SHORT_SHA nếu muốn
 
 # Quét mã với SonarQube
 sonar_scan:
   stage: sonar_scan
   image: sonarsource/sonar-scanner-cli:latest
   script:
-    - sonar-scanner \
+    - |
+      sonar-scanner \
         -Dsonar.projectKey=khainx106-group_flaskbase_ci_deploy_5c3db64c-02ca-4df6-8921-db0e69eb5a0 \
         -Dsonar.host.url=$SONAR_HOST_URL \
         -Dsonar.login=$SONAR_TOKEN
