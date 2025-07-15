@@ -1,4 +1,4 @@
-sonar_scan:
+build:
   stage: sonar_scan
   image:
     name: sonarsource/sonar-scanner-cli:latest
