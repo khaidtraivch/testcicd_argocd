@@ -1,15 +1,34 @@
-stages:
-  - sonar_scan
+# stages:
+#   - sonar_scan
+
+# variables:
+#   SONAR_HOST_URL: "http://sonarqube:9000"
+
+# sonar_scan:
+#   stage: sonar_scan
+#   image: sonarsource/sonar-scanner-cli:latest
+#   script:
+#     - |
+#       sonar-scanner \
+#         -Dsonar.projectKey=khainx106_flaskbase_main \
+#         -Dsonar.projectName="FlaskBase CI" \
+#         -Dsonar.host.url=$SONAR_HOST_URL \
+#         -Dsonar.login=$SONAR_TOKEN
+#   only:
+#     - main
+#     - develop
+#     - merge_requests
 
 variables:
   SONAR_HOST_URL: "http://sonarqube:9000"
 
 sonar_scan:
   stage: sonar_scan
-  image: sonarsource/sonar-scanner-cli:latest
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
   script:
-    - |
-      sonar-scanner \
+    - sonar-scanner \
         -Dsonar.projectKey=khainx106_flaskbase_main \
         -Dsonar.projectName="FlaskBase CI" \
         -Dsonar.host.url=$SONAR_HOST_URL \
