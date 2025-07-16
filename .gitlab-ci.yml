@@ -37,7 +37,7 @@ sonar_scan:
 
 check_quality_gate:
   stage: check_quality_gate
-  image: python:3.10-alpine
+  image: python:3.10
   script:
     - echo ">>> Đợi lấy ce_task_id"
     - export ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"\(.*\)"/\1/')
