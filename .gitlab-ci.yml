@@ -21,19 +21,59 @@
 #     - merge_requests
 
 stages:
-  - build
+  - sonar_scan
 
-build:
-  stage: build
-  image: docker:latest
-  services:
-    - name: docker:dind
-      alias: docker
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""  # Tắt TLS hoàn toàn
+variables:
+  SONAR_HOST_URL: "http://sonarqube:9000"
+
+sonar_scan:
+  stage: sonar_scan
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openjdk17 curl jq
   script:
-    - docker info
-    - docker version
+    - |
+      sonar-scanner \
+        -Dsonar.projectKey=khainx106_flaskbase_main \
+        -Dsonar.projectName="FlaskBase CI" \
+        -Dsonar.sources=. \
+        -Dsonar.host.url=$SONAR_HOST_URL \
+        -Dsonar.login=$SONAR_TOKEN
+
+    - echo ">>> Đợi kết quả Quality Gate..."
+    - |
+      # Lấy task ID của lần quét mới nhất
+      ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | jq -r '.queue[0].id')
+
+      # Đợi tối đa 30 lần, mỗi lần 5s, đến khi task có trạng thái SUCCESS
+      for i in $(seq 1 30); do
+        status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | jq -r '.task.status')
+        if [ "$status" = "SUCCESS" ]; then
+          echo "✅ Analysis completed."
+          break
+        fi
+        echo "⌛ Đợi phân tích... lần $i"
+        sleep 5
+      done
+
+      # Lấy analysisId từ task
+      analysisId=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | jq -r '.task.analysisId')
+
+      # Lấy trạng thái Quality Gate
+      qg_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId" | jq -r '.projectStatus.status')
+
+      echo "⚙️ Quality Gate Status: $qg_status"
+
+      if [ "$qg_status" != "OK" ]; then
+        echo "❌ Quality Gate FAILED. Dừng pipeline."
+        exit 1
+      else
+        echo "✅ Quality Gate PASSED. Tiếp tục pipeline."
+      fi
+  only:
+    - main
+    - develop
+    - merge_requests
+
 
 
