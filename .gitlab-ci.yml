@@ -27,11 +27,13 @@ build:
   stage: build
   image: docker:latest
   services:
-    - docker:dind
+    - name: docker:dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""  # Tắt TLS hoàn toàn
   script:
     - docker info
     - docker version
-  variables:
-    DOCKER_TLS_CERTDIR: "/certs"
 
 
