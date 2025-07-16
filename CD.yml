@@ -2,41 +2,52 @@ stages:
   - deploy
   - rollback
 
-.deploy_template: &ssh_template
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache openssh bash docker-cli
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-
 deploy_production:
   stage: deploy
-  <<: *ssh_template
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
   script:
-    - echo ">>> SSH vào server và deploy"
+    - echo ">>> Đăng nhập Docker Hub"
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - echo ">>> SSH vào server $DEPLOY_HOST và deploy"
     - |
-      ssh "$DEPLOY_USER@$DEPLOY_HOST" <<EOF
+      ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" << EOF
+        echo ">>> Dừng container cũ (nếu có)"
+        docker stop app_container || true
+        docker rm app_container || true
+
         echo ">>> Pull image mới nhất từ Docker Hub"
-        docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
         docker pull $IMAGE_NAME:latest
-        echo ">>> Deploy bằng docker-compose"
-        docker compose -f /home/$DEPLOY_USER/docker-compose.yml up -d --force-recreate
+
+        echo ">>> Chạy container mới"
+        docker run -d --name app_container -p 80:80 $IMAGE_NAME:latest
       EOF
 
 rollback:
   stage: rollback
   when: manual
   allow_failure: true
-  <<: *ssh_template
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
   script:
-    - echo ">>> SSH vào server và rollback"
+    - echo ">>> Đăng nhập Docker Hub"
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - echo ">>> SSH vào server $DEPLOY_HOST và rollback"
     - |
-      ssh "$DEPLOY_USER@$DEPLOY_HOST" <<EOF
+      ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" << EOF
+        echo ">>> Dừng container hiện tại"
+        docker stop app_container || true
+        docker rm app_container || true
+
         echo ">>> Pull image rollback từ Docker Hub"
-        docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
         docker pull $IMAGE_NAME:rollback
-        echo ">>> Rollback bằng docker-compose"
-        docker compose -f /home/$DEPLOY_USER/docker-compose.rollback.yml up -d --force-recreate
+
+        echo ">>> Chạy container rollback"
+        docker run -d --name app_container -p 80:80 $IMAGE_NAME:rollback
       EOF
