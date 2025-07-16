@@ -25,14 +25,12 @@ deploy_production:
     - rm -f ~/.ssh/known_hosts
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - echo "🔍 Kiểm tra DEPLOY_HOST: $DEPLOY_HOST"
+    # - echo "🔍 Kiểm tra DEPLOY_HOST: $DEPLOY_HOST"
     - ping -c 3 "$DEPLOY_HOST" || echo "⚠️ Không thể ping tới $DEPLOY_HOST"
     - ping -c 3 127.0.0.1 || echo "⚠️ Không thể ping tới 127.0.0.1"
     - nc -zv "$DEPLOY_HOST" 22 || echo "⚠️ Cổng SSH (22) không thể truy cập trên $DEPLOY_HOST"
     - nc -zv 127.0.0.1 22 || echo "⚠️ Cổng SSH (22) không thể truy cập trên 127.0.0.1"
-    - ssh
-
-System: I'm sorry, it looks like the response got cut off. Let me complete the `.gitlab-ci.yml` configuration for the `deploy_production` job, ensuring it addresses the issues and uses `127.0.0.1` for reliability while including debugging for the public IP (`1.52.109.89`). I'll also ensure the `before_script` contains only valid strings to avoid the earlier syntax error.
-
-### Corrected `.gitlab-ci.yml`
-
+    - ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts || echo "❌ Thất bại khi quét khóa SSH cho 127.0.0.1" && exit 1
+  script:
+    - echo "🔐 Đăng nhập vào $DEPLOY_USER@127.0.0.1"
+    - ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@127.0.0.1" "docker stop app || true; docker rm app || true; docker pull $IMAGE_NAME:latest; docker run -d --name app -p 5000:5000 $IMAGE_NAME:latest"
