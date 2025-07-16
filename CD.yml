@@ -4,50 +4,52 @@ stages:
 
 deploy_production:
   stage: deploy
+  image: alpine:latest
+  only:
+    - main
   before_script:
+    - apk add --no-cache openssh docker-cli
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
   script:
-    - echo ">>> Đăng nhập Docker Hub"
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    - echo ">>> SSH vào server $DEPLOY_HOST và deploy"
+    - echo "🔐 SSH vào server để triển khai"
     - |
-      ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" << EOF
-        echo ">>> Dừng container cũ (nếu có)"
-        docker stop app_container || true
-        docker rm app_container || true
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" << EOF
+        echo "🛑 Dừng container cũ nếu có"
+        docker stop app || true
+        docker rm app || true
 
-        echo ">>> Pull image mới nhất từ Docker Hub"
+        echo "📥 Pull image mới từ Docker Hub"
         docker pull $IMAGE_NAME:latest
 
-        echo ">>> Chạy container mới"
-        docker run -d --name app_container -p 80:80 $IMAGE_NAME:latest
+        echo "🚀 Chạy container mới"
+        docker run -d --name app -p 5000:5000 $IMAGE_NAME:latest
       EOF
 
 rollback:
   stage: rollback
+  image: alpine:latest
   when: manual
   allow_failure: true
   before_script:
+    - apk add --no-cache openssh docker-cli
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
   script:
-    - echo ">>> Đăng nhập Docker Hub"
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    - echo ">>> SSH vào server $DEPLOY_HOST và rollback"
+    - echo "🔐 SSH vào server để rollback"
     - |
-      ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" << EOF
-        echo ">>> Dừng container hiện tại"
-        docker stop app_container || true
-        docker rm app_container || true
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" << EOF
+        echo "🛑 Dừng container hiện tại"
+        docker stop app || true
+        docker rm app || true
 
-        echo ">>> Pull image rollback từ Docker Hub"
+        echo "📥 Pull image rollback từ Docker Hub"
         docker pull $IMAGE_NAME:rollback
 
-        echo ">>> Chạy container rollback"
-        docker run -d --name app_container -p 80:80 $IMAGE_NAME:rollback
+        echo "🚀 Chạy container rollback"
+        docker run -d --name app -p 5000:5000 $IMAGE_NAME:rollback
       EOF
