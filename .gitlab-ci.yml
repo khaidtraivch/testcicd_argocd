@@ -10,7 +10,7 @@ stages:
   - deploy
   - rollback
 
-##
+#
 # stages:
 #   - sonar_scan
 #   - check_quality_gate
