@@ -33,5 +33,5 @@ build:
     - docker version
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
-  privileged: true
+
 
