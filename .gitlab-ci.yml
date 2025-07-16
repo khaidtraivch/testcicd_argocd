@@ -10,22 +10,21 @@
 #   - deploy
 #   - rollback
 
-
 stages:
   - deploy
 
 deploy_production:
   stage: deploy
-  image: ubuntu:latest
+  tags:
+    - shell
   only:
     - main
   before_script:
-    - apt-get update && apt-get install -y openssh-client netcat-openbsd iputils-ping
     - mkdir -p ~/.ssh
     - rm -f ~/.ssh/known_hosts
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    # - echo "🔍 Kiểm tra DEPLOY_HOST: $DEPLOY_HOST"
+    - echo "🔍 Kiểm tra DEPLOY_HOST: $DEPLOY_HOST"
     - ping -c 3 "$DEPLOY_HOST" || echo "⚠️ Không thể ping tới $DEPLOY_HOST"
     - ping -c 3 127.0.0.1 || echo "⚠️ Không thể ping tới 127.0.0.1"
     - nc -zv "$DEPLOY_HOST" 22 || echo "⚠️ Cổng SSH (22) không thể truy cập trên $DEPLOY_HOST"
