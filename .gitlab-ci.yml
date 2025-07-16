@@ -1,51 +1,43 @@
-include:
-  - local: CI.yml
-  - local: CD.yml  
+# include:
+#   - local: CI.yml
+#   - local: CD.yml  
 
-stages:
-  - sonar_scan
-  - check_quality_gate
-  - build_image
-  - push_image
-  - deploy
-  - rollback
-
-#
 # stages:
 #   - sonar_scan
 #   - check_quality_gate
+#   - build_image
+#   - push_image
+#   - deploy
+#   - rollback
 
-# sonar_scan:
-#   stage: sonar_scan
-#   image: sonarsource/sonar-scanner-cli:latest
-#   script:
-#   - sonar-scanner -Dsonar.projectKey=khainx106_flaskbase_main -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN
 
-#   artifacts:
-#     expire_in: 1 hour
-#     reports:
-#       dotenv: sonar.env
+stages:
+  - deploy
+  # - rollback
 
-# check_quality_gate:
-#   stage: check_quality_gate
-#   image: python:3.10
-#   script:
-#     - echo ">>> Đợi lấy ce_task_id"
-#     - export ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"\(.*\)"/\1/')
-#     - echo "ce_task_id=$ce_task_id"
-#     - echo ">>> Đợi xử lý kết quả SonarQube..."
-#     - >
-#       for i in $(seq 1 10); do
-#         task_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | grep -o '"status":"[^"]*"' | sed 's/"status":"\(.*\)"/\1/')
-#         echo "Trạng thái xử lý: $task_status"
-#         if [ "$task_status" = "SUCCESS" ]; then break; fi
-#         sleep 5
-#       done
-#     - echo ">>> Lấy status Quality Gate"
-#     - qg_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=khainx106_flaskbase_main" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
-#     # - echo " Quality Gate status: $qg_status"
-#     - |
-#       if [ "$qg_status" != "OK" ] && [ "$qg_status" != "Passed" ]; then
-#         echo "Quality Gate thất bại!"
-#         exit 1
-#       fi
+deploy_production:
+  stage: deploy
+  image: ubuntu:latest
+  only:
+    - main
+  before_script:
+    - apt-get update && apt-get install -y openssh-client netcat-openbsd
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - echo "🔍 Kiểm tra DEPLOY_HOST: $DEPLOY_HOST"
+    - ping -c 3 "$DEPLOY_HOST" || echo "⚠️ Không thể ping tới $DEPLOY_HOST"
+    - nc -zv "$DEPLOY_HOST" 22 || echo "⚠️ Cổng SSH (22) không thể truy cập"
+    - ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts || (echo "❌ Thất bại khi quét khóa SSH cho $DEPLOY_HOST" && exit 1)
+  script:
+    - echo "🔐 Đăng nhập vào $DEPLOY_USER@$DEPLOY_HOST"
+    - |
+      ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" << 'EOF'
+        echo "🛑 Dừng container cũ (nếu có)"
+        docker stop app || true
+        docker rm app || true
+        echo "📥 Tải image mới từ Docker Hub"
+        docker pull $IMAGE_NAME:latest
+        echo "🚀 Chạy container mới"
+        docker run -d --name app -p 5000:5000 $IMAGE_NAME:latest
+      EOF
