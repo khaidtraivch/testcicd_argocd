@@ -42,9 +42,13 @@ build_image:
   stage: build_image
   image: docker:latest
   services:
-    - docker:dind
+    - name: docker:dind
+      alias: docker
   variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
+
   script:
     - echo ">>> Build Docker image"
     - docker build -t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
