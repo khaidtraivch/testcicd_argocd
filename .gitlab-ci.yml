@@ -20,9 +20,18 @@
 #     - develop
 #     - merge_requests
 
+stages:
+  - build
+
 build:
   stage: build
   image: docker:latest
+  services:
+    - docker:dind
   script:
     - docker info
     - docker version
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  privileged: true
+
