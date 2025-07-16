@@ -20,6 +20,12 @@
 #     - develop
 #     - merge_requests
 
+stages:
+  - sonar_scan
+
+variables:
+  SONAR_HOST_URL: "http://sonarqube:9000"
+
 sonar_scan:
   stage: sonar_scan
   image: sonarsource/sonar-scanner-cli:latest
