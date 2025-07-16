@@ -12,10 +12,10 @@ sonar_scan:
       sonar-scanner \
         -Dsonar.projectKey=khainx106_flaskbase_main \
         -Dsonar.projectName="FlaskBase CI" \
+        -Dsonar.sources=. \
         -Dsonar.host.url=$SONAR_HOST_URL \
         -Dsonar.login=$SONAR_TOKEN
   only:
     - main
     - develop
     - merge_requests
-
