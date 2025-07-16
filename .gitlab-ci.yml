@@ -13,7 +13,6 @@
 
 stages:
   - deploy
-  # - rollback
 
 deploy_production:
   stage: deploy
@@ -23,6 +22,7 @@ deploy_production:
   before_script:
     - apt-get update && apt-get install -y openssh-client netcat-openbsd
     - mkdir -p ~/.ssh
+    - rm -f ~/.ssh/known_hosts
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - echo "🔍 Kiểm tra DEPLOY_HOST: $DEPLOY_HOST"
