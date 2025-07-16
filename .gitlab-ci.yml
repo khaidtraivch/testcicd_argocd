@@ -1,60 +1,50 @@
+include:
+  - local: CI.yml
+  - local: CD.yml  # Sẽ thêm nội dung sau
+
+stages:
+  - sonar_scan
+  - check_quality_gate
+  - build_image
+  - push_image
+  - deploy
+
+
 # stages:
 #   - sonar_scan
-
-# variables:
-#   SONAR_HOST_URL: "http://sonarqube:9000"
+#   - check_quality_gate
 
 # sonar_scan:
 #   stage: sonar_scan
 #   image: sonarsource/sonar-scanner-cli:latest
 #   script:
+#   - sonar-scanner -Dsonar.projectKey=khainx106_flaskbase_main -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN
+
+#   artifacts:
+#     expire_in: 1 hour
+#     reports:
+#       dotenv: sonar.env
+
+# check_quality_gate:
+#   stage: check_quality_gate
+#   image: python:3.10
+#   script:
+#     - echo ">>> Đợi lấy ce_task_id"
+#     - export ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"\(.*\)"/\1/')
+#     - echo "ce_task_id=$ce_task_id"
+#     - echo ">>> Đợi xử lý kết quả SonarQube..."
+#     - >
+#       for i in $(seq 1 10); do
+#         task_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | grep -o '"status":"[^"]*"' | sed 's/"status":"\(.*\)"/\1/')
+#         echo "Trạng thái xử lý: $task_status"
+#         if [ "$task_status" = "SUCCESS" ]; then break; fi
+#         sleep 5
+#       done
+#     - echo ">>> Lấy status Quality Gate"
+#     - qg_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=khainx106_flaskbase_main" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
+#     # - echo " Quality Gate status: $qg_status"
 #     - |
-#       sonar-scanner \
-#         -Dsonar.projectKey=khainx106_flaskbase_main \
-#         -Dsonar.projectName="FlaskBase CI" \
-#         -Dsonar.sources=. \
-#         -Dsonar.host.url=$SONAR_HOST_URL \
-#         -Dsonar.login=$SONAR_TOKEN
-#   only:
-#     - main
-#     - develop
-#     - merge_requests
-
-stages:
-  - sonar_scan
-  - check_quality_gate
-
-sonar_scan:
-  stage: sonar_scan
-  image: sonarsource/sonar-scanner-cli:latest
-  script:
-  - sonar-scanner -Dsonar.projectKey=khainx106_flaskbase_main -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN
-
-  artifacts:
-    expire_in: 1 hour
-    reports:
-      dotenv: sonar.env
-
-check_quality_gate:
-  stage: check_quality_gate
-  image: python:3.10
-  script:
-    - echo ">>> Đợi lấy ce_task_id"
-    - export ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"\(.*\)"/\1/')
-    - echo "ce_task_id=$ce_task_id"
-    - echo ">>> Đợi xử lý kết quả SonarQube..."
-    - >
-      for i in $(seq 1 10); do
-        task_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | grep -o '"status":"[^"]*"' | sed 's/"status":"\(.*\)"/\1/')
-        echo "Trạng thái xử lý: $task_status"
-        if [ "$task_status" = "SUCCESS" ]; then break; fi
-        sleep 5
-      done
-    - echo ">>> Lấy status Quality Gate"
-    - qg_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=khainx106_flaskbase_main" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
-    # - echo " Quality Gate status: $qg_status"
-    - |
-      if [ "$qg_status" != "OK" ] && [ "$qg_status" != "Passed" ]; then
-        echo "Quality Gate thất bại!"
-        exit 1
-      fi
+#       if [ "$qg_status" != "OK" ] && [ "$qg_status" != "Passed" ]; then
+#         echo "Quality Gate thất bại!"
+#         exit 1
+#       fi
