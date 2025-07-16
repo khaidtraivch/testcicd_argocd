@@ -43,7 +43,7 @@ sonar_scan:
           break
         fi
         echo "⌛ Waiting for analysis ($i)..."
-        sleep 5
+       sleep 5
       done
 
       analysisId=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | jq -r '.task.analysisId')
