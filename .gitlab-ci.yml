@@ -28,52 +28,45 @@ variables:
 
 sonar_scan:
   stage: sonar_scan
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache openjdk17 curl jq
+  image: sonarsource/sonar-scanner-cli:latest
   script:
-    - |
-      sonar-scanner \
+    - sonar-scanner \
         -Dsonar.projectKey=khainx106_flaskbase_main \
         -Dsonar.projectName="FlaskBase CI" \
         -Dsonar.sources=. \
         -Dsonar.host.url=$SONAR_HOST_URL \
-        -Dsonar.login=$SONAR_TOKEN
+        -Dsonar.token=$SONAR_TOKEN
 
     - echo ">>> Đợi kết quả Quality Gate..."
-    - |
-      # Lấy task ID của lần quét mới nhất
-      ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | jq -r '.queue[0].id')
 
-      # Đợi tối đa 30 lần, mỗi lần 5s, đến khi task có trạng thái SUCCESS
+    - |
+      ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | jq -r '.queue[0].id')
       for i in $(seq 1 30); do
         status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | jq -r '.task.status')
         if [ "$status" = "SUCCESS" ]; then
-          echo "✅ Analysis completed."
+          echo "✅ Analysis done."
           break
         fi
-        echo "⌛ Đợi phân tích... lần $i"
+        echo "⌛ Waiting for analysis ($i)..."
         sleep 5
       done
 
-      # Lấy analysisId từ task
       analysisId=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | jq -r '.task.analysisId')
-
-      # Lấy trạng thái Quality Gate
       qg_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId" | jq -r '.projectStatus.status')
 
-      echo "⚙️ Quality Gate Status: $qg_status"
+      echo "📊 Quality Gate: $qg_status"
 
       if [ "$qg_status" != "OK" ]; then
-        echo "❌ Quality Gate FAILED. Dừng pipeline."
+        echo "❌ Quality Gate FAILED"
         exit 1
       else
-        echo "✅ Quality Gate PASSED. Tiếp tục pipeline."
+        echo "✅ Quality Gate PASSED"
       fi
   only:
     - main
     - develop
     - merge_requests
+
 
 
 
