@@ -1,0 +1,39 @@
+stages:
+  - deploy
+  - rollback
+
+deploy_production:
+  stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker info
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  script:
+    - echo ">>> Pull image mới nhất từ Docker Hub"
+    - docker pull $IMAGE_NAME:latest
+    - echo ">>> Deploy bằng docker-compose"
+    - docker compose -f docker-compose.yml up -d --force-recreate
+
+rollback:
+  stage: rollback
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  when: manual
+  allow_failure: true
+  before_script:
+    - docker info
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  script:
+    - echo ">>> Pull image rollback từ Docker Hub"
+    - docker pull $IMAGE_NAME:rollback
+    - echo ">>> Rollback bằng docker-compose"
+    - docker compose -f docker-compose.rollback.yml up -d --force-recreate
