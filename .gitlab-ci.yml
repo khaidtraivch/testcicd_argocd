@@ -1,13 +1,13 @@
 include:
   - local: CI.yml
-  - local: CD.yml  # Sẽ thêm nội dung sau
+  # - local: CD.yml  # Sẽ thêm nội dung sau
 
 stages:
   - sonar_scan
   - check_quality_gate
   - build_image
   - push_image
-  - deploy
+  # - deploy
 
 ##
 # stages:
