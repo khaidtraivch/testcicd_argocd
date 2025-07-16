@@ -22,45 +22,50 @@
 
 stages:
   - sonar_scan
-
-variables:
-  SONAR_HOST_URL: "http://sonarqube:9000"
+  - check_quality_gate
 
 sonar_scan:
   stage: sonar_scan
   image: sonarsource/sonar-scanner-cli:latest
-  before_script:
-    - apk update && apk add --no-cache jq
-
   script:
-  - apk update && apk add --no-cache jq
-  - |
-    sonar-scanner \
-      -Dsonar.projectKey=khainx106_flaskbase_main \
-      -Dsonar.projectName="FlaskBase CI" \
-      -Dsonar.sources=. \
-      -Dsonar.host.url=$SONAR_HOST_URL \
-      -Dsonar.token=$SONAR_TOKEN
+    - sonar-scanner \
+        -Dsonar.projectKey=khainx106_flaskbase_main \
+        -Dsonar.sources=. \
+        -Dsonar.host.url=$SONAR_HOST_URL \
+        -Dsonar.token=$SONAR_TOKEN
+  artifacts:
+    expire_in: 1 hour
+    reports:
+      dotenv: sonar.env
 
+check_quality_gate:
+  stage: check_quality_gate
+  image: python:3.10-alpine
+  before_script:
+    - apk add --no-cache jq curl
+  script:
+    # Lấy ce_task_id từ API
+    - echo ">>> Đợi lấy ce_task_id"
+    - export ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | jq -r '.queue[0].id')
+
+    # Đợi task xử lý
+    - echo ">>> Đợi xử lý kết quả SonarQube..."
     - |
-      ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | jq -r '.queue[0].id')
-
-      echo ">>> Đợi kết quả Quality Gate..."
-
       for i in $(seq 1 10); do
         task_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | jq -r '.task.status')
         echo "Trạng thái xử lý: $task_status"
-        if [ "$task_status" = "SUCCESS" ]; then
-          break
-        fi
+        if [ "$task_status" = "SUCCESS" ]; then break; fi
         sleep 5
       done
 
-      qg_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=khainx106_flaskbase_main" | jq -r '.projectStatus.status')
-      echo "Quality Gate: $qg_status"
+    # Check Quality Gate
+    - qg_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=khainx106_flaskbase_main" | jq -r '.projectStatus.status')
+    - echo ">>> Quality Gate status: $qg_status"
 
+    - |
       if [ "$qg_status" != "OK" ] && [ "$qg_status" != "Passed" ]; then
-        echo "Chất lượng code không đạt yêu cầu."
+        echo "Quality Gate thất bại!"
         exit 1
       fi
+
 
