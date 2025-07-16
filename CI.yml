@@ -1,0 +1,68 @@
+sonar_scan:
+  stage: sonar_scan
+  image: sonarsource/sonar-scanner-cli:latest
+  script:
+    - >
+      sonar-scanner
+      -Dsonar.projectKey=khainx106_flaskbase_main
+      -Dsonar.sources=.
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.token=$SONAR_TOKEN
+  artifacts:
+    expire_in: 1 hour
+    reports:
+      dotenv: sonar.env
+
+check_quality_gate:
+  stage: check_quality_gate
+  image: python:3.10-alpine
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - echo ">>> Lấy ce_task_id"
+    - export ce_task_id=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/component?component=khainx106_flaskbase_main" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"\(.*\)"/\1/')
+
+    - echo ">>> Đợi Sonar xử lý..."
+    - |
+      for i in $(seq 1 10); do
+        task_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/ce/task?id=$ce_task_id" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
+        echo "Trạng thái: $task_status"
+        if [ "$task_status" = "SUCCESS" ]; then break; fi
+        sleep 5
+      done
+
+    - qg_status=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=khainx106_flaskbase_main" | grep -o '"status":"[^"]*"' | head -1 | sed 's/"status":"\(.*\)"/\1/')
+    - echo ">>> Quality Gate status: $qg_status"
+
+    - |
+      if [ "$qg_status" != "OK" ] && [ "$qg_status" != "Passed" ]; then
+        echo "Quality Gate FAILED!"
+        exit 1
+      fi
+
+build_image:
+  stage: build_image
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  script:
+    - echo ">>> Build Docker image"
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
+    - docker tag $IMAGE_NAME:$CI_COMMIT_SHORT_SHA $IMAGE_NAME:latest
+  artifacts:
+    name: "docker-image"
+    paths:
+      - docker-image.tar
+
+push_image:
+  stage: push_image
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - echo ">>> Đăng nhập Docker Hub"
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker push $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $IMAGE_NAME:latest
