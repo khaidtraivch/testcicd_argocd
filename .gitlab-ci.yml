@@ -9,7 +9,7 @@ stages:
   - push_image
   - deploy
 
-
+##
 # stages:
 #   - sonar_scan
 #   - check_quality_gate
