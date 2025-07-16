@@ -2,13 +2,14 @@ stages:
   - sonar_scan
 
 variables:
-  SONAR_HOST_URL: "http://host.docker.internal:9000"  # hoặc IP thật của máy chủ
+  SONAR_HOST_URL: "http://host.docker.internal:9000"  # nếu SonarQube chạy trên máy chủ host
 
 sonar_scan:
   stage: sonar_scan
   image: sonarsource/sonar-scanner-cli:latest
   script:
-    - sonar-scanner \
+    - |
+      sonar-scanner \
         -Dsonar.projectKey=khainx106_flaskbase_main \
         -Dsonar.projectName="FlaskBase CI" \
         -Dsonar.host.url=$SONAR_HOST_URL \
