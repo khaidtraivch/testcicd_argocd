@@ -7,22 +7,21 @@ deploy_production:
   only:
     - main
   before_script:
+    - apk add --no-cache openssh-client
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
   script:
-    - echo "🔐 Đăng nhập  $DEPLOY_USER@$DEPLOY_HOST"
+    - echo "🔐 Logging into $DEPLOY_USER@$DEPLOY_HOST"
     - |
       ssh "$DEPLOY_USER@$DEPLOY_HOST" << 'EOF'
-        echo "🛑 Dừng container cũ (nếu có)"
+        echo "🛑 Stopping old container (if any)"
         docker stop app || true
         docker rm app || true
-
-        echo "📥 Pull image mới từ Docker Hub"
+        echo "📥 Pulling latest image from Docker Hub"
         docker pull $IMAGE_NAME:latest
-
-        echo "🚀 Chạy container mới"
+        echo "🚀 Running new container"
         docker run -d --name app -p 5000:5000 $IMAGE_NAME:latest
       EOF
 
@@ -32,22 +31,20 @@ rollback:
   when: manual
   allow_failure: true
   before_script:
-    - apk add --no-cache openssh docker-cli
+    - apk add --no-cache openssh-client docker-cli
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
   script:
-    - echo "🔐 SSH vào server để rollback"
+    - echo "🔐 SSHing to server for rollback"
     - |
-      ssh "$DEPLOY_USER@$DEPLOY_HOST" << EOF
-        echo "🛑 Dừng container hiện tại"
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" << 'EOF'
+        echo "🛑 Stopping current container"
         docker stop app || true
         docker rm app || true
-
-        echo "📥 Pull image rollback từ Docker Hub"
+        echo "📥 Pulling rollback image from Docker Hub"
         docker pull $IMAGE_NAME:rollback
-
-        echo "🚀 Chạy container rollback"
+        echo "🚀 Running rollback container"
         docker run -d --name app -p 5000:5000 $IMAGE_NAME:rollback
       EOF
