@@ -2,7 +2,7 @@ stages:
   - sonar_scan
 
 variables:
-  SONAR_HOST_URL: "http://host.docker.internal:9000"  # nếu SonarQube chạy trên máy chủ host
+  SONAR_HOST_URL: "http://172.17.0.1:9000" 
 
 sonar_scan:
   stage: sonar_scan
