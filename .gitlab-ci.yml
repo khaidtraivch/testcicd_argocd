@@ -1,14 +1,14 @@
-# include:
-#   - local: CI.yml
-#   - local: CD.yml  
+include:
+  - local: CI.yml
+  - local: CD.yml  
 
-# stages:
-#   - sonar_scan
-#   - check_quality_gate
-#   - build_image
-#   - push_image
-#   - deploy
-#   - rollback
+stages:
+  - sonar_scan
+  - check_quality_gate
+  - build_image
+  - push_image
+  - deploy
+  - post_scan
 
 ######
 # stages:
@@ -38,9 +38,9 @@
 #     - ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@127.0.0.1" "docker stop app || true; docker rm app || true; docker pull $IMAGE_NAME:latest; docker run -d --name app -p 5000:5000 $IMAGE_NAME:latest"
 
 #####CD
-stages:
+# stages:
   # - deploy
-  - post_scan
+  # - post_scan
 
 # deploy_production:
 #   stage: deploy
@@ -99,25 +99,25 @@ stages:
 #     - docker pull aquasec/trivy:latest
 #     - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image $IMAGE_NAME:latest
 
-zap_scan:
-  stage: post_scan
-  tags:
-    - ubuntu
-  image: docker:latest
-  services:
-    - docker:dind
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-  script:
-    - until docker info; do echo "Waiting for docker daemon..."; sleep 2; done
-    - docker network create zapnet || true
-    - docker run -d --network zapnet --name test-app $IMAGE_NAME:latest
-    - docker run --rm --network zapnet -v $CI_PROJECT_DIR:/zap/wrk/:rw ghcr.io/zaproxy/zaproxy zap-baseline.py -t http://test-app:5000 -r zap-report.html
-    - docker stop test-app || true
-    - docker rm test-app || true
-  artifacts:
-    paths:
-      - zap-report.html
+# zap_scan:
+#   stage: post_scan
+#   tags:
+#     - ubuntu
+#   image: docker:latest
+#   services:
+#     - docker:dind
+#   variables:
+#     DOCKER_HOST: tcp://docker:2375
+#     DOCKER_TLS_CERTDIR: ""
+#   script:
+#     - until docker info; do echo "Waiting for docker daemon..."; sleep 2; done
+#     - docker network create zapnet || true
+#     - docker run -d --network zapnet --name test-app $IMAGE_NAME:latest
+#     - docker run --rm --network zapnet -v $CI_PROJECT_DIR:/zap/wrk/:rw ghcr.io/zaproxy/zaproxy zap-baseline.py -t http://test-app:5000 -r zap-report.html
+#     - docker stop test-app || true
+#     - docker rm test-app || true
+#   artifacts:
+#     paths:
+#       - zap-report.html
       
-  allow_failure: true  # <-- cho phép failure không làm fail pipeline
+#   allow_failure: true  # <-- cho phép failure không làm fail pipeline
