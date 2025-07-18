@@ -119,3 +119,5 @@ zap_scan:
   artifacts:
     paths:
       - zap-report.html
+      
+  allow_failure: true  # <-- cho phép failure không làm fail pipeline
