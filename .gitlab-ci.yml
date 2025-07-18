@@ -110,7 +110,6 @@ zap_scan:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
   script:
-    - docker network create zapnet || true
     - docker run -d --rm --network zapnet --name test-app $IMAGE_NAME:latest
     - docker run --rm --network zapnet -v $CI_PROJECT_DIR:/zap/wrk/:rw ghcr.io/zaproxy/zaproxy zap-baseline.py \
         -t http://test-app:5000 -r zap-report.html
