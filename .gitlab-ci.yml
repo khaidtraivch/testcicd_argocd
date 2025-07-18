@@ -10,8 +10,37 @@
 #   - deploy
 #   - rollback
 
+######
+# stages:
+#   - deploy
+
+# deploy_production:
+#   stage: deploy
+#   tags:
+#     - shell
+#   only:
+#     - main
+#   before_script:
+#     - mkdir -p ~/.ssh
+#     - rm -f ~/.ssh/known_hosts
+#     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+#     - chmod 600 ~/.ssh/id_rsa
+#     # - echo "🔍 Kiểm tra DEPLOY_HOST: $DEPLOY_HOST"
+#     - ping -c 3 "$DEPLOY_HOST" || echo "⚠️ Không thể ping tới $DEPLOY_HOST"
+#     - ping -c 3 127.0.0.1 || echo "⚠️ Không thể ping tới 127.0.0.1"
+#     - nc -zv "$DEPLOY_HOST" 22 || echo "⚠️ Cổng SSH (22) không thể truy cập trên $DEPLOY_HOST"
+#     - nc -zv 127.0.0.1 22 || echo "⚠️ Cổng SSH (22) không thể truy cập trên 127.0.0.1"
+#     - ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts
+#     - if [ $? -ne 0 ]; then echo "❌ Thất bại khi quét khóa SSH cho 127.0.0.1"; exit 1; fi
+#     - echo "✅ Quét khóa SSH thành công cho 127.0.0.1"
+#   script:
+#     - echo "🔐 Đăng nhập vào $DEPLOY_USER@127.0.0.1"
+#     - ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@127.0.0.1" "docker stop app || true; docker rm app || true; docker pull $IMAGE_NAME:latest; docker run -d --name app -p 5000:5000 $IMAGE_NAME:latest"
+
+#####CD
 stages:
   - deploy
+  - post_scan
 
 deploy_production:
   stage: deploy
@@ -24,7 +53,6 @@ deploy_production:
     - rm -f ~/.ssh/known_hosts
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    # - echo "🔍 Kiểm tra DEPLOY_HOST: $DEPLOY_HOST"
     - ping -c 3 "$DEPLOY_HOST" || echo "⚠️ Không thể ping tới $DEPLOY_HOST"
     - ping -c 3 127.0.0.1 || echo "⚠️ Không thể ping tới 127.0.0.1"
     - nc -zv "$DEPLOY_HOST" 22 || echo "⚠️ Cổng SSH (22) không thể truy cập trên $DEPLOY_HOST"
@@ -35,3 +63,26 @@ deploy_production:
   script:
     - echo "🔐 Đăng nhập vào $DEPLOY_USER@127.0.0.1"
     - ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@127.0.0.1" "docker stop app || true; docker rm app || true; docker pull $IMAGE_NAME:latest; docker run -d --name app -p 5000:5000 $IMAGE_NAME:latest"
+
+trivy_scan:
+  stage: post_scan
+  tags:
+    - ubuntu
+  script:
+    - docker pull aquasec/trivy:latest
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image $IMAGE_NAME:latest
+
+zap_scan:
+  stage: post_scan
+  tags:
+    - ubuntu
+  script:
+    - docker network create zapnet || true
+    - docker run -d --rm --network zapnet --name test-app $IMAGE_NAME:latest
+    - docker run --rm --network zapnet -v $CI_PROJECT_DIR:/zap/wrk/:rw ghcr.io/zaproxy/zaproxy zap-baseline.py \
+        -t http://test-app:5000 -r zap-report.html
+  artifacts:
+    paths:
+      - zap-report.html
+
+
