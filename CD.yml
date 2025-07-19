@@ -41,7 +41,7 @@ trivy_scan:
 zap_scan:
   stage: post_scan
   tags:
-    - ubuntu
+    - zap
   image: docker:latest
   services:
     - docker:dind
