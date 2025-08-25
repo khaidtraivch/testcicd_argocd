@@ -1,12 +1,11 @@
 stages:
   - deploy
-  # - post_scan
 
 deploy_argocd:
   stage: deploy
   image: alpine:latest
   tags:
-    - shell
+    - docker
   only:
     - main
   before_script:
@@ -20,6 +19,7 @@ deploy_argocd:
     - echo "🔄 Đồng bộ ứng dụng Argo CD"
     - argocd app sync $ARGOCD_APP_NAME
     - echo "✅ Triển khai bằng Argo CD thành công"
+
 
 # deploy_production:
 #   stage: deploy
