@@ -1,6 +1,8 @@
 stages:
   - deploy
 
+
+
 deploy_argocd:
   stage: deploy
   tags:
