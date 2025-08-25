@@ -3,13 +3,11 @@ stages:
 
 deploy_argocd:
   stage: deploy
-  image: alpine:latest
   tags:
-    - docker
+    - shell  # hoặc docker, tùy runner
   only:
     - main
   before_script:
-    - apk add --no-cache curl bash
     - curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
     - chmod +x argocd
     - mv argocd /usr/local/bin/
@@ -19,6 +17,7 @@ deploy_argocd:
     - echo "🔄 Đồng bộ ứng dụng Argo CD"
     - argocd app sync $ARGOCD_APP_NAME
     - echo "✅ Triển khai bằng Argo CD thành công"
+
 
 
 # deploy_production:
