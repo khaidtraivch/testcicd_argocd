@@ -12,7 +12,7 @@ deploy_argocd:
   before_script:
     - curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
     - chmod +x argocd
-    - mv argocd /usr/local/bin/
+    - sudo mv argocd /usr/local/bin/
   script:
     - echo "🌐 Đăng nhập Argo CD CLI"
     - argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
