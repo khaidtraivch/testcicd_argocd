@@ -48,7 +48,8 @@ build_image:
     DOCKER_HOST: tcp://docker:2375/
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
-
+  tags:
+    - docker
   script:
     - echo ">>> Build Docker image"
     - docker build -t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
@@ -70,6 +71,8 @@ push_image:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
+  tags:
+    - docker  
   script:
     - echo ">>> Đăng nhập Docker Hub"
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
