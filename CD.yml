@@ -17,6 +17,7 @@ deploy_argocd:
     - echo "🔄 Cập nhật image tag:$CI_COMMIT_SHORT_SHA"
     - argocd app set "$ARGOCD_APP_NAME" -p image.tag="$CI_COMMIT_SHORT_SHA"
     - argocd app sync "$ARGOCD_APP_NAME"
+    - kubectl port-forward svc/waf-app 5002:5000 -n default &
     - echo "✅ Deploy thành công"
 
 
