@@ -14,11 +14,14 @@ deploy_argocd:
   script:
     - echo "🌐 Đăng nhập Argo CD CLI"
     - argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
-    - echo "🔄 Cập nhật image tag:$CI_COMMIT_SHORT_SHA"
+    - echo "🔄 Force cancel operation nếu có"
+    - argocd app terminate-op "$ARGOCD_APP_NAME" || echo "Không có operation đang chạy hoặc hủy không thành công"
+    - sleep 10  # đợi ArgoCD xử lý hủy
+    - echo "🔄 Cập nhật image tag: $CI_COMMIT_SHORT_SHA"
     - argocd app set "$ARGOCD_APP_NAME" -p image.tag="$CI_COMMIT_SHORT_SHA"
     - argocd app sync "$ARGOCD_APP_NAME"
-    - kubectl port-forward svc/waf-app 5002:5000 -n default &
     - echo "✅ Deploy thành công"
+
 
 
 
