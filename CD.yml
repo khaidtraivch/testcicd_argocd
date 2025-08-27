@@ -19,6 +19,7 @@ deploy_argocd:
     - sleep 10  # đợi ArgoCD xử lý hủy
     - echo "🔄 Cập nhật image tag:$CI_COMMIT_SHORT_SHA"
     - argocd app set "$ARGOCD_APP_NAME" -p image.tag="$CI_COMMIT_SHORT_SHA"
+    - argocd app wait "$ARGOCD_APP_NAME" --operation --timeout 300
     - argocd app sync "$ARGOCD_APP_NAME"
     - echo "✅ Deploy thành công"
 
