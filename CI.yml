@@ -38,6 +38,10 @@ stages:
 #         exit 1
 #       fi
 
+variables:
+  IMAGE_NAME: khainxphuthai/flask_waf
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
 build_image:
   stage: build_image
   image: docker:latest
@@ -52,14 +56,12 @@ build_image:
     - docker
   script:
     - echo ">>> Build Docker image"
-    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
-    - docker tag $IMAGE_NAME:$CI_COMMIT_SHORT_SHA $IMAGE_NAME:latest
-    - docker save $IMAGE_NAME:$CI_COMMIT_SHORT_SHA -o docker-image.tar
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker save $IMAGE_NAME:$IMAGE_TAG -o docker-image.tar
   artifacts:
     name: "docker-image"
     paths:
       - docker-image.tar
-
 
 push_image:
   stage: push_image
@@ -77,6 +79,20 @@ push_image:
     - echo ">>> Đăng nhập Docker Hub"
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - docker load -i docker-image.tar
-    - docker tag $IMAGE_NAME:$CI_COMMIT_SHORT_SHA $IMAGE_NAME:latest
-    - docker push $IMAGE_NAME:$CI_COMMIT_SHORT_SHA
-    - docker push $IMAGE_NAME:latest
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+
+update_helm_values:
+  stage: push_image
+  image: alpine:latest
+  script:
+    - echo ">>> Cập nhật image tag trong values-waf.yaml"
+    - apk add --no-cache git sed
+    - sed -i "s#^\(\s*tag:\s*\).*#\1$IMAGE_TAG#" ./values-waf.yaml
+    - git config user.email "xuankhai191@gmail.com"
+    - git config user.name "khaidtraivch"
+    - git add ./values-waf.yaml
+    - git commit -m "ci: update image tag to $IMAGE_TAG"
+    - git push origin $CI_COMMIT_REF_NAME
+  only:
+    - main
+
