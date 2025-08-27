@@ -14,7 +14,7 @@ deploy_argocd:
   script:
     - echo "🌐 Đăng nhập Argo CD CLI"
     - argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
-    - echo "🔄 Triển khai ứng dụng với tag động: $CI_COMMIT_SHORT_SHA"
+    - echo "🔄 Triển khai ứng dụng với tag:$CI_COMMIT_SHORT_SHA"
     - argocd app sync $ARGOCD_APP_NAME --parameter image.tag=$CI_COMMIT_SHORT_SHA
     - echo "✅ Triển khai Argo CD thành công"
 
