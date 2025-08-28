@@ -1,0 +1,44 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Environment variables
+.env
+.env.*
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# VSCode and other IDEs
+.vscode/
+.idea/
+
+# Pytest
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# SQLite DB
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
